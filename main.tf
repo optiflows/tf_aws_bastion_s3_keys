@@ -50,11 +50,14 @@ data "template_file" "user_data" {
 
   vars {
     s3_bucket_name              = "${var.s3_bucket_name}"
+    s3_log_bucket_name          = "${var.s3_log_bucket_name}"
     s3_bucket_uri               = "${var.s3_bucket_uri}"
+    s3_bucket_prefix            = "${var.s3_bucket_prefix}"
     ssh_user                    = "${var.ssh_user}"
     keys_update_frequency       = "${var.keys_update_frequency}"
     enable_hourly_cron_updates  = "${var.enable_hourly_cron_updates}"
     additional_user_data_script = "${var.additional_user_data_script}"
+    region                      = "${var.region}"
   }
 }
 
@@ -103,7 +106,7 @@ resource "aws_autoscaling_group" "bastion" {
   desired_capacity          = "1"
   min_size                  = "1"
   max_size                  = "1"
-  health_check_grace_period = "60"
+  health_check_grace_period = "10"
   health_check_type         = "EC2"
   force_delete              = false
   wait_for_capacity_timeout = 0
