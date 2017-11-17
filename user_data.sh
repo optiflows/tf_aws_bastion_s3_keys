@@ -14,7 +14,7 @@ pip install --upgrade awscli
 ##############
 
 ### VARS
-CLOUDWATCHGROUP=BastionMainLogGroup
+CLOUDWATCHGROUP=${cloudwatch_loggroup}
 
 
 ###

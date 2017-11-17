@@ -28,6 +28,11 @@ variable "name" {
   default = "bastion"
 }
 
+variable "cloudwatch_loggroup" {
+  default     = "BastionMainLogGroup"
+  description = "The name of the CloudWatch Log Group to use."
+}
+
 variable extra_tags {
   type        = "list"
   default     = []

@@ -53,6 +53,7 @@ data "template_file" "user_data" {
     s3_log_bucket_name          = "${var.s3_log_bucket_name}"
     s3_bucket_uri               = "${var.s3_bucket_uri}"
     s3_bucket_prefix            = "${var.s3_bucket_prefix}"
+    cloudwatch_loggroup         = "${var.cloudwatch_loggroup}"
     ssh_user                    = "${var.ssh_user}"
     keys_update_frequency       = "${var.keys_update_frequency}"
     enable_hourly_cron_updates  = "${var.enable_hourly_cron_updates}"
