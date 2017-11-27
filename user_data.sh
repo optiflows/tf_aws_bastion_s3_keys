@@ -221,7 +221,31 @@ if [ -n "$keys_update_frequency" ]; then
   ( crontab -u root -l | grep -v "$croncmd" ; echo "$cronjob" ) | crontab -u root -
 fi
 ###################################################################
+######################### clean_user_data #########################
+###################################################################
+
+cat > /usr/bin/bastion/clean_user_data << 'EOF'
+#!/bin/bash
+BASEDIR="/home"
+# ubuntu is a user to exclude as it is the default user.
+for user in $(ls -1 $${BASEDIR} | grep -Ev "^ubuntu$");
+do
+        pushd $${BASEDIR}/$${user}/; rm -rf $(ls -1a $${BASEDIR}/$${user} |grep -vE "^\.ssh$|^\.bashrc$|^\.profile$|^\.bash_logout$|^\.\.$|^\.$") & popd
+done
+EOF
+
+chmod 700 /usr/bin/bastion/clean_user_data
+crontab -l > ~/mycron
+cat >> ~/mycron << EOF
+3 1 * * 0 /usr/bin/bastion/clean_user_data
+EOF
+crontab ~/mycron
+rm ~/mycron
+
 ###################################################################
 ###################################################################
+###################################################################
+
+
 # Append addition user-data script
 ${additional_user_data_script}
