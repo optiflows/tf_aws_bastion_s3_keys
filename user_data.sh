@@ -39,6 +39,7 @@ mkdir /var/log/bastion
 chown ${ssh_user}:${ssh_user} /var/log/bastion
 chmod -R 770 /var/log/bastion
 setfacl -Rdm other:0 /var/log/bastion
+setfacl -Rm other::wx /var/log/bastion
 
 # Make OpenSSH execute a custom script on logins
 echo -e "\nForceCommand /usr/bin/bastion/shell" >> /etc/ssh/sshd_config
@@ -159,7 +160,6 @@ while read line; do
     cut -d: -f1 /etc/passwd | grep -qx $USER_NAME
     if [ $? -eq 1 ]; then
       /usr/sbin/adduser --disabled-password --gecos "" $USER_NAME && \
-      /usr/sbin/usermod -a -G ubuntu $USER_NAME && \
       mkdir -m 700 /home/$USER_NAME/.ssh && \
       chown $USER_NAME:$USER_NAME /home/$USER_NAME/.ssh && \
       echo "$line" >> ~/keys_installed && \
@@ -188,7 +188,6 @@ if [ -f ~/keys_installed ]; then
   while read line; do
     USER_NAME="`get_user_name "$line"`"
     echo "`date --date="today" "+%Y-%m-%d %H-%M-%S"`: Removing user account for $USER_NAME ($line)" >> $LOG_FILE
-    /usr/sbin/userdel $USER_NAME ubuntu
     /usr/sbin/userdel -r -f $USER_NAME
   done < ~/keys_to_remove
   comm -3 ~/keys_installed ~/keys_to_remove | sed "s/\t//g" > ~/tmp && mv ~/tmp ~/keys_installed
