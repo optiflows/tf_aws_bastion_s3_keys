@@ -26,7 +26,7 @@ chmod +x bastion_bootstrap.sh
 wget https://s3.amazonaws.com/quickstart-reference/linux/bastion/latest/scripts/banner_message.txt
 ./bastion_bootstrap.sh --banner https://s3.amazonaws.com/quickstart-reference/linux/bastion/latest/scripts/banner_message.txt \
   --enable true \
-  --tcp-forwarding false \
+  --tcp-forwarding true \
   --x11-forwarding false
 
 ###################################################################
@@ -44,11 +44,9 @@ setfacl -Rm other::wx /var/log/bastion
 # Make OpenSSH execute a custom script on logins
 echo -e "\nForceCommand /usr/bin/bastion/shell" >> /etc/ssh/sshd_config
 
-# Block some SSH features that bastion host users could use to circumvent 
+# Block some SSH features that bastion host users could use to circumvent
 # the solution
-awk '!/AllowTcpForwarding/' /etc/ssh/sshd_config > temp && mv temp /etc/ssh/sshd_config
 awk '!/X11Forwarding/' /etc/ssh/sshd_config > temp && mv temp /etc/ssh/sshd_config
-echo "AllowTcpForwarding no" >> /etc/ssh/sshd_config
 echo "X11Forwarding no" >> /etc/ssh/sshd_config
 
 mkdir /usr/bin/bastion
@@ -68,7 +66,7 @@ if [[ -z $SSH_ORIGINAL_COMMAND ]]; then
   echo "AUDIT KEY: $LOG_FILE"
   echo ""
 
-  # I suffix the log file name with a random string. I explain why 
+  # I suffix the log file name with a random string. I explain why
   # later on.
   SUFFIX=`mktemp -u _XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`
 
@@ -77,8 +75,8 @@ if [[ -z $SSH_ORIGINAL_COMMAND ]]; then
 
 else
 
-  # The "script" program could be circumvented with some commands 
-  # (e.g. bash, nc). Therefore, I intentionally prevent users 
+  # The "script" program could be circumvented with some commands
+  # (e.g. bash, nc). Therefore, I intentionally prevent users
   # from supplying commands.
 
   echo "This bastion supports interactive sessions only. Do not supply a command"
@@ -91,18 +89,18 @@ EOF
 # Make the custom script executable
 chmod a+x /usr/bin/bastion/shell
 
-# Bastion host users could overwrite and tamper with an existing log file 
-# using "script" if they knew the exact file name. I take several measures 
+# Bastion host users could overwrite and tamper with an existing log file
+# using "script" if they knew the exact file name. I take several measures
 # to obfuscate the file name:
 # 1. Add a random suffix to the log file name.
-# 2. Prevent bastion host users from listing the folder containing log 
-# files. 
+# 2. Prevent bastion host users from listing the folder containing log
+# files.
 # This is done by changing the group owner of "script" and setting GID.
 chown root:${ssh_user} /usr/bin/script
 chmod g+s /usr/bin/script
 
-# 3. Prevent bastion host users from viewing processes owned by other 
-# users, because the log file name is one of the "script" 
+# 3. Prevent bastion host users from viewing processes owned by other
+# users, because the log file name is one of the "script"
 # execution parameters.
 mount -o remount,rw,hidepid=2 /proc
 awk '!/proc/' /etc/fstab > temp && mv temp /etc/fstab
@@ -130,11 +128,11 @@ chmod 700 /usr/bin/bastion/sync_s3
 ############################ sync user ############################
 ###################################################################
 
-# Bastion host users should log in to the bastion host with 
-# their personal SSH key pair. The public keys are stored on 
-# S3 with the following naming convention: "username.pub". This 
-# script retrieves the public keys, creates or deletes local user 
-# accounts as needed, and copies the public key to 
+# Bastion host users should log in to the bastion host with
+# their personal SSH key pair. The public keys are stored on
+# S3 with the following naming convention: "username.pub". This
+# script retrieves the public keys, creates or deletes local user
+# accounts as needed, and copies the public key to
 # /home/username/.ssh/authorized_keys
 
 cat > /usr/bin/bastion/sync_users << 'EOF'
@@ -166,7 +164,7 @@ while read line; do
       echo "`date --date="today" "+%Y-%m-%d %H-%M-%S"`: Creating user account for $USER_NAME ($line)" >> $LOG_FILE
     fi
 
-    # Copy the public key from S3, if a user account was created 
+    # Copy the public key from S3, if a user account was created
     # from this key
     if [ -f ~/keys_installed ]; then
       grep -qx "$line" ~/keys_installed
