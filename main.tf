@@ -3,7 +3,7 @@ resource "aws_security_group" "bastion" {
   vpc_id      = "${var.vpc_id}"
   description = "Bastion security group (only SSH inbound access is allowed)"
 
-  tags {
+  tags = {
     Name = "${var.name}"
   }
 }
@@ -48,7 +48,7 @@ resource "aws_security_group_rule" "bastion_all_egress" {
 data "template_file" "user_data" {
   template = "${file("${path.module}/${var.user_data_file}")}"
 
-  vars {
+  vars = {
     s3_bucket_name              = "${var.s3_bucket_name}"
     s3_log_bucket_name          = "${var.s3_log_bucket_name}"
     s3_bucket_uri               = "${var.s3_bucket_uri}"
@@ -84,9 +84,7 @@ resource "aws_launch_configuration" "bastion" {
   user_data         = "${data.template_file.user_data.rendered}"
   enable_monitoring = "${var.enable_monitoring}"
 
-  security_groups = [
-    "${compact(concat(list(aws_security_group.bastion.id), split(",", "${var.security_group_ids}")))}",
-  ]
+  security_groups = "${compact(concat(list(aws_security_group.bastion.id), split(",", "${var.security_group_ids}")))}"
 
   iam_instance_profile        = "${var.iam_instance_profile}"
   associate_public_ip_address = "${var.associate_public_ip_address}"
@@ -100,9 +98,7 @@ resource "aws_launch_configuration" "bastion" {
 resource "aws_autoscaling_group" "bastion" {
   name = "${var.name}"
 
-  vpc_zone_identifier = [
-    "${var.subnet_ids}",
-  ]
+  vpc_zone_identifier = var.subnet_ids
 
   desired_capacity          = "1"
   min_size                  = "1"
@@ -124,15 +120,13 @@ resource "aws_autoscaling_group" "bastion" {
     "GroupTotalInstances",
   ]
 
-  tags = [
-    "${concat(
-        list(
-          map("key", "Name", "value", "${var.name}", "propagate_at_launch", true),
-          map("key", "EIP", "value", "${var.eip}", "propagate_at_launch", true)
-        ),
-        var.extra_tags)
-      }",
-  ]
+  tags = "${concat(
+    list(
+      map("key", "Name", "value", "${var.name}", "propagate_at_launch", true),
+      map("key", "EIP", "value", "${var.eip}", "propagate_at_launch", true)
+    ),
+    var.extra_tags)
+  }"
 
   lifecycle {
     create_before_destroy = true
