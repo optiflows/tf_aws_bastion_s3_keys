@@ -160,6 +160,7 @@ while read line; do
       /usr/sbin/adduser --disabled-password --gecos "" $USER_NAME && \
       mkdir -m 700 /home/$USER_NAME/.ssh && \
       chown $USER_NAME:$USER_NAME /home/$USER_NAME/.ssh && \
+      usermod -aG ubuntu $USER_NAME
       echo "$line" >> ~/keys_installed && \
       echo "`date --date="today" "+%Y-%m-%d %H-%M-%S"`: Creating user account for $USER_NAME ($line)" >> $LOG_FILE
     fi
