@@ -1,5 +1,5 @@
 variable "allowed_cidr" {
-  type = "list"
+  type = list(string)
 
   default = [
     "0.0.0.0/0",
@@ -9,7 +9,7 @@ variable "allowed_cidr" {
 }
 
 variable "allowed_ipv6_cidr" {
-  type = "list"
+  type = list(string)
 
   default = [
     "::/0",
@@ -19,7 +19,7 @@ variable "allowed_ipv6_cidr" {
 }
 
 variable "allowed_security_groups" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "A list of Security Group ID's to allow access to."
 }
@@ -34,7 +34,7 @@ variable "cloudwatch_loggroup" {
 }
 
 variable extra_tags {
-  type        = "list"
+  type        = list
   default     = []
   description = "A list of tags to associate to the bastion instance."
 }
