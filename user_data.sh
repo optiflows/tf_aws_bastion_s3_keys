@@ -1,21 +1,18 @@
 #!/usr/bin/env bash
+set -ex
+
 locale-gen fr_FR.UTF-8
 ##############
 # Install deps
 ##############
 # Ubuntu
 apt-get update
-apt-get install python-pip jq -y
+apt-get install python3-pip jq awscli acl -y
 #####################
-
-pip install --upgrade pip
-pip install --upgrade awscli
-
-##############
 
 ### VARS
 CLOUDWATCHGROUP=${cloudwatch_loggroup}
-
+REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}')
 
 ###
 #Hardening
@@ -24,16 +21,16 @@ CLOUDWATCHGROUP=${cloudwatch_loggroup}
 wget https://raw.githubusercontent.com/aws-quickstart/quickstart-linux-bastion/master/scripts/bastion_bootstrap.sh
 chmod +x bastion_bootstrap.sh
 wget https://s3.amazonaws.com/quickstart-reference/linux/bastion/latest/scripts/banner_message.txt
-./bastion_bootstrap.sh --banner https://s3.amazonaws.com/quickstart-reference/linux/bastion/latest/scripts/banner_message.txt \
-  --enable true \
-  --tcp-forwarding true \
-  --x11-forwarding false
+BANNER_REGION=$REGION ./bastion_bootstrap.sh --banner s3://quickstart-reference/linux/bastion/latest/scripts/banner_message.txt \
+                                             --enable true \
+                                             --tcp-forwarding true \
+                                             --x11-forwarding false
 
 ###################################################################
 ############################# prepare #############################
 ###################################################################
 # Create a new folder for the log files
-mkdir /var/log/bastion
+mkdir -p /var/log/bastion
 
 # Allow ${ssh_user} only to access this folder and its content
 chown ${ssh_user}:${ssh_user} /var/log/bastion
@@ -49,7 +46,7 @@ echo -e "\nForceCommand /usr/bin/bastion/shell" >> /etc/ssh/sshd_config
 awk '!/X11Forwarding/' /etc/ssh/sshd_config > temp && mv temp /etc/ssh/sshd_config
 echo "X11Forwarding no" >> /etc/ssh/sshd_config
 
-mkdir /usr/bin/bastion
+mkdir -p /usr/bin/bastion
 
 cat > /usr/bin/bastion/shell << 'EOF'
 #!/bin/bash
@@ -118,7 +115,7 @@ cat > /usr/bin/bastion/sync_s3 << 'EOF'
 # Copy log files to S3 with server-side encryption enabled.
 # Then, if successful, delete log files that are older than a day.
 LOG_DIR="/var/log/bastion/"
-/usr/local/bin/aws s3 cp $LOG_DIR s3://${s3_log_bucket_name}/logs/ --sse --region ${region} --recursive && find $LOG_DIR* -mtime +1 -exec rm {} \;
+/usr/bin/aws s3 cp $LOG_DIR s3://${s3_log_bucket_name}/logs/ --sse --region ${region} --recursive && find $LOG_DIR* -mtime +1 -exec rm {} \;
 
 EOF
 
@@ -147,7 +144,7 @@ get_user_name () {
 }
 
 # For each public key available in the S3 bucket
-/usr/local/bin/aws s3api list-objects --bucket ${s3_bucket_name} --prefix ${s3_bucket_prefix}/ --region ${region} --output text --query 'Contents[?Size>`0`].Key' | sed -e 'y/\t/\n/' > ~/keys_retrieved_from_s3
+/usr/bin/aws s3api list-objects --bucket ${s3_bucket_name} --prefix ${s3_bucket_prefix}/ --region ${region} --output text --query 'Contents[?Size>`0`].Key' | sed -e 'y/\t/\n/' > ~/keys_retrieved_from_s3
 while read line; do
   USER_NAME="`get_user_name "$line"`"
 
@@ -170,7 +167,7 @@ while read line; do
     if [ -f ~/keys_installed ]; then
       grep -qx "$line" ~/keys_installed
       if [ $? -eq 0 ]; then
-        /usr/local/bin/aws s3 cp s3://${s3_bucket_name}/$line /home/$USER_NAME/.ssh/authorized_keys --region ${region}
+        /usr/bin/aws s3 cp s3://${s3_bucket_name}/$line /home/$USER_NAME/.ssh/authorized_keys --region ${region}
         chmod 600 /home/$USER_NAME/.ssh/authorized_keys
         chown $USER_NAME:$USER_NAME /home/$USER_NAME/.ssh/authorized_keys
       fi
